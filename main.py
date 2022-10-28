@@ -1,10 +1,14 @@
 from typing import List
 from uuid import uuid4, UUID
-
 import uvicorn
 from fastapi import FastAPI, HTTPException
 
+# model
 from models import User, Gender, Role, UserUpdateRequest
+
+# prometheus for monitoring
+import http.server
+import prometheus_client as prom
 
 app = FastAPI()
 
@@ -63,4 +67,6 @@ async def update_user(user_update: UserUpdateRequest, user_id: UUID):
 
 
 if __name__ == "__main__":
+    prom.start_http_server(8080)
     uvicorn.run(app, host="0.0.0.0", port=8085)
+
