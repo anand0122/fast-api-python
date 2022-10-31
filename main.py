@@ -67,6 +67,6 @@ async def update_user(user_update: UserUpdateRequest, user_id: UUID):
 
 
 if __name__ == "__main__":
-    prom.start_http_server(8080)
+    prom.start_http_server(8086)
     uvicorn.run(app, host="0.0.0.0", port=8085)
 
