@@ -1,7 +1,7 @@
 from typing import List
 from uuid import uuid4, UUID
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 
 # model
 from models import User, Gender, Role, UserUpdateRequest
@@ -9,6 +9,8 @@ from models import User, Gender, Role, UserUpdateRequest
 # prometheus for monitoring
 import http.server
 import prometheus_client as prom
+
+import logging
 
 app = FastAPI()
 
@@ -18,22 +20,37 @@ db: List[User] = [
 
 ]
 
+# Create and configure logger
+logging.basicConfig(filename="logs/fastapi.log",
+                    format='%(asctime)s %(message)s')
+
+                    # filemode='wa'
+
+# Creating an object
+logger = logging.getLogger()
+ 
+# Setting the threshold of logger to DEBUG
+logger.setLevel(logging.INFO)
+
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    logs= f" {request.client.host} {request.url.port} {request.url.path} "
+    logger.info(logs)
+    response = await call_next(request)
+    return response
 
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
 
-
 @app.get("/api/v1/users")
 async def fetch_all_users():
     return db;
-
 
 @app.post("/api/v1/users")
 async def register_user(user: User):
     db.append(user)
     return {"id": user.id}
-
 
 @app.delete("/api/v1/users/{user_id}")
 async def delete_user(user_id: UUID):
@@ -45,7 +62,6 @@ async def delete_user(user_id: UUID):
         status_code=404,
         detail=f"User with id: {user_id} does not exists"
     )
-
 
 @app.put("/api/v1/users/{user_id}")
 async def update_user(user_update: UserUpdateRequest, user_id: UUID):
@@ -65,6 +81,7 @@ async def update_user(user_update: UserUpdateRequest, user_id: UUID):
         detail=f"user with id: {user_id} does not exists"
     )
 
+# logger.debug(db)
 
 if __name__ == "__main__":
     prom.start_http_server(8086)

@@ -1,0 +1,68 @@
+# apiVersion: v1
+# kind: Namespace
+# metadata:
+#   name: test
+  
+# ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastapi-deployment
+  namespace: test
+  labels:
+    app: fastapi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fastapi
+  template:
+    metadata:
+      labels:
+        app: fastapi
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/path: '/'
+        prometheus.io/port: '8086'
+    spec:
+      containers:
+        - name: fastapi
+          image: pythontest:0.1
+          ports:
+            - name: http
+              containerPort: 8085
+            - name: metrices
+              containerPort: 8086
+          volumeMounts:
+            - mountPath: /usr/app/src/logs
+              name: test-volume
+      volumes:
+        - name: test-volume
+          hostPath:
+              # directory location on host
+            path: /Users/anandkumardubey/Desktop/practice/POC/python-fastapi/logs
+              # this field is optional
+            type: DirectoryOrCreate
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fastapi-service
+  namespace: test
+spec:
+  selector: 
+    app: fastapi
+  # type: ClusterIP
+  type: NodePort 
+  ports:
+    - name: http
+      port: 8085
+      targetPort: 8085
+      protocol: TCP
+      nodePort: 30001
+    - name: metrices
+      port: 8086
+      targetPort: 8086
+      protocol: TCP
+      nodePort: 30002

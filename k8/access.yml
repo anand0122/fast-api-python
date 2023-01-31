@@ -1,0 +1,85 @@
+# https://jjasghar.github.io/blog/2020/08/25/how-to-create-a-cluster-admin-bearer-token-on-kubernetes/
+# apiVersion: v1
+# kind: Namespace
+# metadata:
+#   name: test
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: test
+secrets:
+- name: prometheus-secret
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: prometheus-secret
+  namespace: test
+  annotations:
+    kubernetes.io/service-account.name: prometheus
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus
+  namespace: test
+rules:
+- apiGroups: [ "" ]
+  resources: [ "pods", "services","endpoints","nodes","nodes/proxy","nodes/metrics","nodes/stats","namespaces"]
+  verbs: [ "get", "list", "watch"]
+- apiGroups: [ "extensions" ]
+  resources: [ "deployments" ]
+  verbs: [ "get", "list", "watch"]
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+- nonResourceURLs:
+  - /
+  verbs:
+  - get
+# - apiGroups: [""]
+#   resources:
+#   - nodes
+#   - services
+#   - endpoints
+#   - pods
+#   verbs: ["get", "list", "watch"]
+# - apiGroups:
+#   - extensions
+#   resources:
+#   - ingresses
+#   verbs: ["get", "list", "watch"]
+# - apiGroups: [""]
+#   resources:
+#   - configmaps
+#   verbs: ["get"]
+
+# ---
+# apiVersion: v1
+# kind: ServiceAccount
+# metadata:
+#   name: prometheus
+#   namespace: monitoring
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus
+  namespace: test
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus
+subjects:
+- kind: ServiceAccount
+  name: prometheus
+  namespace: test
+
+# curl -k -H "Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IkxvbzNZaHNLUTlkNE1wUDNCUWVJa293aFBnSzJiQm9EU0lEdW1PN1NVVTgifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJ0ZXN0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6InByb21ldGhldXMtc2VjcmV0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6InByb21ldGhldXMiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiJkNzcyYmU4Ni0wZGIxLTQzODQtOTY3Ni1jNTQyZGQ0NDk3YjMiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6dGVzdDpwcm9tZXRoZXVzIn0.URzQq69AKhcc3Wcp5PUVUZzcJ0qy5uCpvXQXf5zRuxbh0jQ3mjHWUtbFMskVmwaArrVwFvmW4sIy-QKlXiREijpIcqJc5Yvpq11z0qDz652FtO9Xr7xZJKVj9WOWdWxI-j8cSjCTNigQ6oGSngEg-hWk3uhRAor-FSr9Vt0YJGnVFqCMeyVBdAoVrZGswOeLedkqa4uhrR81_9sWBKlmyFyWmxZLFjAZMqFFAEM64hVXxF3AQqnCPY_d3wyW6iM09rpOzQMhPasWCCpkI7at7E0uS6_krXdRSDWPRfHyYMgsZrx9GgMrO3riXOkQAFLcYYvV2kq1O7STN56HzDut9g" -X GET "https://127.0.0.1:6443/api/v1/nodes"
